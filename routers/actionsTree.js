@@ -4,22 +4,6 @@ import db from "../db.js";
 
 const actionsTreeRouter = express();
 
-db.run(`
-  CREATE TABLE IF NOT EXISTS reasons (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT UNIQUE NOT NULL
-  );
-`);
-db.run(`
-  CREATE TABLE IF NOT EXISTS solutions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    reason_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    FOREIGN KEY (reason_id) REFERENCES reasons(id) ON DELETE CASCADE
-  );
-`);
-db.exec('PRAGMA foreign_keys = ON;');
-
 actionsTreeRouter.get('/reasons', (req, res) => {
   try {
     const stmt = db.prepare('SELECT * FROM reasons');
