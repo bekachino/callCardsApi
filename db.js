@@ -31,7 +31,9 @@ db.run(`
     username TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    sip TEXT NOT NULL,
+    phone_number TEXT NOT NULL
   );
 `);
 
