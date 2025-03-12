@@ -34,8 +34,9 @@ authRouter.post("/sign-up", async (req, res) => {
   
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
+    const sql = 'INSERT INTO users (username, name, role, password, sip, phone_number) VALUES (?, ?, ?, ?, ?, ?)';
     
-    db.run(`INSERT INTO users (username, name, role, password, sip, phone_number) VALUES (?, ?, ?, ?, ?, ?)`, [
+    db.run(sql, [
       username,
       name,
       role,
@@ -61,8 +62,9 @@ authRouter.post("/sign-in", (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ error: "Имя пользователя и пароль обязательны" });
   }
+  const sql = 'SELECT * FROM users WHERE username = ?';
   
-  db.get(`SELECT * FROM users WHERE username = ?`, [username], async (err, user) => {
+  db.get(sql, [username], async (err, user) => {
     if (err) return res.status(500).json({ error: "Ошибка базы данных" });
     if (!user) return res.status(401).json({ error: "Неверный логин или пароль" });
     
