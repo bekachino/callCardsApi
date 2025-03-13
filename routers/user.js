@@ -5,8 +5,8 @@ const usersRouter = express();
 
 usersRouter.get('/', (req, res) => {
   try {
-    const stmt = db.prepare('SELECT * FROM users');
-    stmt.all((err, rows) => {
+    const sql = 'SELECT * FROM users';
+    db.all(sql, [], (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows);
     });
@@ -24,7 +24,7 @@ usersRouter.delete('/:id', (req, res) => {
     const sql = 'DELETE FROM users WHERE id=?';
     db.run(sql, [id], (err) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.status(200).json({message: 'Пользователь удалён'})
+      res.status(200).json({ message: 'Пользователь удалён' })
     });
   } catch (e) {
     res.status(500).send(e.message);

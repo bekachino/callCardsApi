@@ -6,8 +6,8 @@ const actionsTreeRouter = express();
 
 actionsTreeRouter.get('/reasons', (req, res) => {
   try {
-    const stmt = db.prepare('SELECT * FROM reasons');
-    stmt.all((err, rows) => {
+    const sql = 'SELECT * FROM reasons';
+    db.all(sql, [], (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows);
     });
@@ -18,8 +18,8 @@ actionsTreeRouter.get('/reasons', (req, res) => {
 
 actionsTreeRouter.get('/solutions', (req, res) => {
   try {
-    const stmt = db.prepare('SELECT * FROM solutions');
-    stmt.all((err, rows) => {
+    const sql = 'SELECT * FROM solutions';
+    db.all(sql, [], (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows);
     });
@@ -31,10 +31,11 @@ actionsTreeRouter.get('/solutions', (req, res) => {
 actionsTreeRouter.post('/create_reason', (req, res) => {
   try {
     const { title } = req.body;
-    if (!title) return res.status(400).json({ error: 'Title is required' });
+    if (!title) return res.status(400).json({ error: 'Поле title обязательна' });
     
-    const stmt = db.prepare('INSERT INTO reasons (title) VALUES (?)');
-    stmt.run(title, function (err) {
+    const sql = 'INSERT INTO reasons (title) VALUES (?)';
+    
+    db.run(sql, [title], function (err) {
       if (err) return res.status(500).json({
         error: ERROR_MESSAGES[err.message] || err.message
       });
@@ -54,10 +55,11 @@ actionsTreeRouter.post('/create_solution', (req, res) => {
       reason_id,
       title
     } = req.body;
-    if (!reason_id || !title) return res.status(400).json({ error: 'reason_id and title are required' });
+    if (!reason_id || !title) return res.status(400).json({ error: 'Поля title и id причины обязательны' });
     
-    const stmt = db.prepare('INSERT INTO solutions (reason_id, title) VALUES (?, ?)');
-    stmt.run(reason_id, title, function (err) {
+    const sql = 'INSERT INTO solutions (reason_id, title) VALUES (?, ?)';
+    
+    db.run(sql, [reason_id, title], function (err) {
       if (err) return res.status(500).json({
         error: ERROR_MESSAGES[err.message] || err.message
       });

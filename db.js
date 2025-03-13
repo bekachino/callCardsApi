@@ -16,6 +16,7 @@ db.run(`
     title TEXT UNIQUE NOT NULL
   );
 `);
+
 db.run(`
   CREATE TABLE IF NOT EXISTS solutions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,6 +35,24 @@ db.run(`
     password TEXT NOT NULL,
     sip TEXT NOT NULL,
     phone_number TEXT NOT NULL
+  );
+`);
+
+db.run(`
+  CREATE TABLE IF NOT EXISTS cards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ls_abon TEXT,
+    phone_number TEXT,
+    sip TEXT,
+    spec_full_name TEXT,
+    full_name TEXT,
+    address TEXT,
+    comment TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    reason_id INTEGER NOT NULL,
+    solution_id INTEGER NOT NULL,
+    FOREIGN KEY (reason_id) REFERENCES reasons(id),
+    FOREIGN KEY (solution_id) REFERENCES solutions(id)
   );
 `);
 
