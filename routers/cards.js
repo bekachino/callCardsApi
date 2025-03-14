@@ -12,9 +12,8 @@ cardsRouter.get('/', (req, res) => {
     
     if (!start_date && !end_date) {
       sql = 'SELECT * FROM cards';
-      sqlParams = [];
     } else {
-      sql = `SELECT * FROM cards WHERE ${!!start_date ? 'created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'created_at < ?' : ''}`;
+      sql = `SELECT * FROM cards WHERE ${!!start_date ? 'created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'created_at <= ?' : ''}`;
       if (!!start_date) sqlParams.push(start_date);
       if (!!end_date) sqlParams.push(end_date);
     }
