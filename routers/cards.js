@@ -14,7 +14,21 @@ cardsRouter.get('/', (req, res) => {
     let sqlParams = [];
     
     if (!start_date && !end_date) {
-      sql = 'SELECT * FROM cards';
+      sql = `
+        select
+         C.id,
+         C.ls_abon,
+         C.created_at,
+         C.spec_full_name,
+         C.sip,
+         C.full_name,
+         C.phone_number,
+         C.address,
+         C.comment,
+         R.title as reason, S.title as solution from cards as C
+        left join reasons as R on R.id = C.reason_id
+        left join solutions as S on S.id = C.solution_id
+      `;
     } else {
       sql = `
         select
@@ -39,6 +53,70 @@ cardsRouter.get('/', (req, res) => {
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows);
+    });
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
+cardsRouter.get('/stats_by_reason', (req, res) => {
+  try {
+    const {
+      start_date,
+      end_date
+    } = req.query;
+    let sql;
+    let sqlParams = [];
+    const result = {};
+    
+    if (!start_date && !end_date) {
+      sql = `
+        select
+         C.id,
+         C.ls_abon,
+         C.created_at,
+         C.spec_full_name,
+         C.sip,
+         C.full_name,
+         C.phone_number,
+         C.address,
+         C.comment,
+         R.title as reason, S.title as solution from cards as C
+        left join reasons as R on R.id = C.reason_id
+        left join solutions as S on S.id = C.solution_id
+      `;
+    } else {
+      sql = `
+        select
+         C.id,
+         C.ls_abon,
+         C.created_at,
+         C.spec_full_name,
+         C.sip,
+         C.full_name,
+         C.phone_number,
+         C.address,
+         C.comment,
+         R.title as reason, S.title as solution from cards as C
+        left join reasons as R on R.id = C.reason_id
+        left join solutions as S on S.id = C.solution_id
+        WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
+      `;
+      if (!!start_date) sqlParams.push(start_date);
+      if (!!end_date) sqlParams.push(end_date);
+    }
+    
+    db.all(sql, sqlParams, (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      rows.forEach(card => {
+        !!result[card.reason] ? result[card.reason]++ : result[card.reason] = 1;
+      });
+      res.json(Object.keys(result).map(key => (
+        {
+          reason: key,
+          count: result[key]
+        }
+      )));
     });
   } catch (e) {
     res.status(500).send(e.message);
