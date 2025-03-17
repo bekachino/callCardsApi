@@ -59,7 +59,10 @@ actionsTreeRouter.post('/create_solution', (req, res) => {
     
     const sql = 'INSERT INTO solutions (reason_id, title) VALUES (?, ?)';
     
-    db.run(sql, [reason_id, title], function (err) {
+    db.run(sql, [
+      reason_id,
+      title
+    ], function (err) {
       if (err) return res.status(500).json({
         error: ERROR_MESSAGES[err.message] || err.message
       });
@@ -73,5 +76,28 @@ actionsTreeRouter.post('/create_solution', (req, res) => {
     res.send(e);
   }
 });
+
+actionsTreeRouter.delete("/reasons/:id", (req, res) => {
+  const { id } = req.params;
+  
+  if (!id) res.status(404).json({ error: 'Отсутсвует id записи' });
+  
+  db.run('DELETE FROM reasons WHERE id = ?', [id], err => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(200).json({ message: 'Запись удалена' })
+  });
+});
+
+actionsTreeRouter.delete("/solutions/:id", (req, res) => {
+  const { id } = req.params;
+  
+  if (!id) res.status(404).json({ error: 'Отсутсвует id записи' });
+  
+  db.run('DELETE FROM solutions WHERE id = ?', [id], err => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.status(200).json({ message: 'Запись удалена' })
+  });
+});
+
 
 export default actionsTreeRouter;
