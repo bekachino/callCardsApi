@@ -149,6 +149,60 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
   }
 });
 
+cardsRouter.get('/report', (req, res) => {
+  try {
+    const {
+      start_date,
+      end_date
+    } = req.query;
+    
+    let sql;
+    let sqlParams = [];
+    const result = {};
+    
+    if (!start_date && !end_date) {
+      sql = initialGetCardsSql;
+    } else {
+      sql = `
+        select
+         C.id,
+         C.ls_abon,
+         C.created_at,
+         C.spec_full_name,
+         C.sip,
+         C.full_name,
+         C.phone_number,
+         C.address,
+         C.comment,
+         R.title as reason, S.title as solution from cards as C
+        left join reasons as R on R.id = C.reason_id
+        left join solutions as S on S.id = C.solution_id
+        WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
+      `;
+      if (!!start_date) sqlParams.push(start_date);
+      if (!!end_date) sqlParams.push(end_date);
+    }
+    
+    db.all(sql, sqlParams, (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      rows.forEach(card => {
+        if (!result[card.sip]) {
+          result[card.sip] = {
+            sip: card.sip,
+            spec_full_name: card.spec_full_name,
+            count: 1,
+          };
+        } else {
+          result[card.sip].count++;
+        }
+      });
+      res.json(Object.keys(result).map(sipKey => result[sipKey]));
+    });
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
 cardsRouter.post('/create_card', (req, res) => {
   try {
     const {
@@ -195,7 +249,7 @@ cardsRouter.delete('/:id', (req, res) => {
   try {
     const { id } = req.params;
     
-    if (!id) res.status(404).json({ error: 'Отсутсвует id пользователя' });
+    if (!id) res.status(404).json({ error: 'Отсутсвует id записи' });
     
     const sql = 'DELETE FROM cards WHERE id=?';
     db.run(sql, [id], (err) => {
