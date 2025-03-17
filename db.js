@@ -50,7 +50,7 @@ db.run(`
     comment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     reason_id INTEGER NOT NULL,
-    solution_id INTEGER NOT NULL,
+    solution_id INTEGER,
     FOREIGN KEY (reason_id) REFERENCES reasons(id),
     FOREIGN KEY (solution_id) REFERENCES solutions(id)
   );

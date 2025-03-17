@@ -1,6 +1,6 @@
 import db from "../db.js";
 import express from "express";
-import { ERROR_MESSAGES } from "../constants.js";
+import { ERROR_MESSAGES, initialGetCardsSql } from "../constants.js";
 
 const cardsRouter = express();
 
@@ -10,25 +10,12 @@ cardsRouter.get('/', (req, res) => {
       start_date,
       end_date
     } = req.query;
+    
     let sql;
     let sqlParams = [];
     
     if (!start_date && !end_date) {
-      sql = `
-        select
-         C.id,
-         C.ls_abon,
-         C.created_at,
-         C.spec_full_name,
-         C.sip,
-         C.full_name,
-         C.phone_number,
-         C.address,
-         C.comment,
-         R.title as reason, S.title as solution from cards as C
-        left join reasons as R on R.id = C.reason_id
-        left join solutions as S on S.id = C.solution_id
-      `;
+      sql = initialGetCardsSql;
     } else {
       sql = `
         select
@@ -70,21 +57,7 @@ cardsRouter.get('/stats_by_reason', (req, res) => {
     const result = {};
     
     if (!start_date && !end_date) {
-      sql = `
-        select
-         C.id,
-         C.ls_abon,
-         C.created_at,
-         C.spec_full_name,
-         C.sip,
-         C.full_name,
-         C.phone_number,
-         C.address,
-         C.comment,
-         R.title as reason, S.title as solution from cards as C
-        left join reasons as R on R.id = C.reason_id
-        left join solutions as S on S.id = C.solution_id
-      `;
+      sql = initialGetCardsSql;
     } else {
       sql = `
         select
@@ -123,6 +96,59 @@ cardsRouter.get('/stats_by_reason', (req, res) => {
   }
 });
 
+cardsRouter.get('/stats_by_solution', (req, res) => {
+  try {
+    const {
+      start_date,
+      end_date
+    } = req.query;
+    let sql;
+    let sqlParams = [];
+    const result = {};
+    
+    if (!start_date && !end_date) {
+      sql = initialGetCardsSql;
+    } else {
+      sql = `
+        select
+         C.id,
+         C.ls_abon,
+         C.created_at,
+         C.spec_full_name,
+         C.sip,
+         C.full_name,
+         C.phone_number,
+         C.address,
+         C.comment,
+         R.title as reason, S.title as solution from cards as C
+        left join reasons as R on R.id = C.reason_id
+        left join solutions as S on S.id = C.solution_id
+        WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
+      `;
+      if (!!start_date) sqlParams.push(start_date);
+      if (!!end_date) sqlParams.push(end_date);
+    }
+    
+    db.all(sql, sqlParams, (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      rows.forEach(card => {
+        !!result[card.solution] ? result[card.solution].count++ : result[card.solution] = {
+          reason: card.reason,
+          solution: card.solution,
+          count: 1,
+        };
+      });
+      res.json(Object.keys(result).map(key => (
+        {
+          ...result[key]
+        }
+      )));
+    });
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
 cardsRouter.post('/create_card', (req, res) => {
   try {
     const {
@@ -136,9 +162,9 @@ cardsRouter.post('/create_card', (req, res) => {
       solution_id,
       comment
     } = req.body;
-    if (!ls_abon || !phone_number || !sip || !spec_full_name || !full_name || !address || !reason_id || !solution_id) return res.status(400)
+    if (!ls_abon || !phone_number || !sip || !spec_full_name || !full_name || !address || !reason_id) return res.status(400)
     .json({
-      error: 'Поля ls_abon, phone_number, sip, spec_full_name, full_name, address, reason_id, solution_id обязательны'
+      error: 'Поля ls_abon, phone_number, sip, spec_full_name, full_name, address, reason_id обязательны'
     });
     const sql = 'INSERT INTO cards (ls_abon, phone_number, sip, spec_full_name, full_name, address, reason_id, solution_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     
