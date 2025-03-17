@@ -7,7 +7,7 @@ import cardsRouter from "./routers/cards.js";
 import hydraSeekerRouter from "./routers/hydraSeeker.js";
 
 const app = express();
-const PORT = 8000;
+const PORT = 8004;
 const corsOptions = {
   origin: "*",
 };
