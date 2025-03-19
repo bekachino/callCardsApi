@@ -108,21 +108,27 @@ const abonSeeker = async (query) => {
   } catch (e) {
     return {
       message: e.message,
-      url: e.config.url
+      url: e.config.url,
+      status: 403
     };
   }
 };
 
 hydraSeekerRouter.get('/:ls_abon', async (req, res) => {
   try {
-    if (!token) {
+    const { ls_abon } = req.params;
+    let foundAbon = await abonSeeker(ls_abon);
+    
+    if (foundAbon.status === 403) {
+      console.log("Срок действия токена истёк. Идёт переавторизация...");
       token = await authorize();
+      if (!token) {
+        return res.status(500).send("Авторизация не удалась");
+      }
+      foundAbon = await abonSeeker(ls_abon);
     }
-    if (!!token) {
-      const { ls_abon } = req.params;
-      const foundAbon = await abonSeeker(ls_abon);
-      res.status(200).send(foundAbon);
-    }
+    
+    res.status(200).send(foundAbon);
   } catch (e) {
     res.status(500).send(e.message);
   }

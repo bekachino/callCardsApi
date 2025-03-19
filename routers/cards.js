@@ -39,7 +39,7 @@ cardsRouter.get('/', (req, res) => {
     
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json(rows);
+      res.json(rows.map(row => ({...row, phone_number: JSON.parse(row.phone_number) })));
     });
   } catch (e) {
     res.status(500).send(e.message);
@@ -224,7 +224,7 @@ cardsRouter.post('/create_card', (req, res) => {
     
     db.run(sql, [
       ls_abon,
-      phone_number,
+      JSON.stringify(phone_number),
       sip,
       spec_full_name,
       full_name,
