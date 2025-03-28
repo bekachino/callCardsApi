@@ -1,6 +1,12 @@
 import db from "../db.js";
 import express from "express";
-import { ERROR_MESSAGES, initialGetCardsSql } from "../constants.js";
+import {
+  authorize,
+  ERROR_MESSAGES,
+  initialGetCardsSql,
+  token
+} from "../constants.js";
+import axios from "axios";
 
 const cardsRouter = express();
 
@@ -27,6 +33,25 @@ const formatRepeatedCalls = rawData => {
   return Object.values(grouped);
 };
 
+const getAbonBalance = async (account_id, n_result_id) => {
+  try {
+    const reqToBalance = await axios(`https://hydra.snt.kg:8000/rest/v2/subjects/customers/${n_result_id}/accounts/${account_id}`, {
+      headers: {
+        Authorization: `Token token=${token}`
+      }
+    });
+    
+    const balance = reqToBalance?.data?.account?.n_sum_bal;
+    if (!!balance) return parseFloat(balance);
+  } catch (e) {
+    return {
+      message: e.message,
+      url: e.config.url,
+      status: 403
+    };
+  }
+};
+
 cardsRouter.get('/', (req, res) => {
   try {
     const {
@@ -41,19 +66,7 @@ cardsRouter.get('/', (req, res) => {
       sql = initialGetCardsSql;
     } else {
       sql = `
-        select
-         C.id,
-         C.ls_abon,
-         C.created_at,
-         C.spec_full_name,
-         C.sip,
-         C.full_name,
-         C.phone_number,
-         C.address,
-         C.comment,
-         R.title as reason, S.title as solution from cards as C
-        left join reasons as R on R.id = C.reason_id
-        left join solutions as S on S.id = C.solution_id
+        ${initialGetCardsSql}
         WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
       `;
       if (!!start_date) sqlParams.push(start_date);
@@ -88,19 +101,7 @@ cardsRouter.get('/stats_by_reason', (req, res) => {
       sql = initialGetCardsSql;
     } else {
       sql = `
-        select
-         C.id,
-         C.ls_abon,
-         C.created_at,
-         C.spec_full_name,
-         C.sip,
-         C.full_name,
-         C.phone_number,
-         C.address,
-         C.comment,
-         R.title as reason, S.title as solution from cards as C
-        left join reasons as R on R.id = C.reason_id
-        left join solutions as S on S.id = C.solution_id
+        ${initialGetCardsSql}
         WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
       `;
       if (!!start_date) sqlParams.push(start_date);
@@ -138,19 +139,7 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
       sql = initialGetCardsSql;
     } else {
       sql = `
-        select
-         C.id,
-         C.ls_abon,
-         C.created_at,
-         C.spec_full_name,
-         C.sip,
-         C.full_name,
-         C.phone_number,
-         C.address,
-         C.comment,
-         R.title as reason, S.title as solution from cards as C
-        left join reasons as R on R.id = C.reason_id
-        left join solutions as S on S.id = C.solution_id
+        ${initialGetCardsSql}
         WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
       `;
       if (!!start_date) sqlParams.push(start_date);
@@ -192,19 +181,7 @@ cardsRouter.get('/report', (req, res) => {
       sql = initialGetCardsSql;
     } else {
       sql = `
-        select
-         C.id,
-         C.ls_abon,
-         C.created_at,
-         C.spec_full_name,
-         C.sip,
-         C.full_name,
-         C.phone_number,
-         C.address,
-         C.comment,
-         R.title as reason, S.title as solution from cards as C
-        left join reasons as R on R.id = C.reason_id
-        left join solutions as S on S.id = C.solution_id
+        ${initialGetCardsSql}
         WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
       `;
       if (!!start_date) sqlParams.push(start_date);
@@ -245,19 +222,7 @@ cardsRouter.get('/repeated_calls', (req, res) => {
       sql = initialGetCardsSql;
     } else {
       sql = `
-        select
-         C.id,
-         C.ls_abon,
-         C.created_at,
-         C.spec_full_name,
-         C.sip,
-         C.full_name,
-         C.phone_number,
-         C.address,
-         C.comment,
-         R.title as reason, S.title as solution from cards as C
-        left join reasons as R on R.id = C.reason_id
-        left join solutions as S on S.id = C.solution_id
+        ${initialGetCardsSql}
         WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
       `;
       if (!!start_date) sqlParams.push(start_date);
@@ -281,6 +246,60 @@ cardsRouter.get('/repeated_calls', (req, res) => {
   }
 });
 
+cardsRouter.get('/inactives', async (req, res) => {
+  try {
+    const {
+      start_date,
+      end_date
+    } = req.query;
+    
+    let sql;
+    let sqlParams = [];
+    
+    if (!start_date && !end_date) {
+      sql = initialGetCardsSql;
+    } else {
+      sql = `
+        ${initialGetCardsSql}
+        WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
+      `;
+      if (!!start_date) sqlParams.push(start_date);
+      if (!!end_date) sqlParams.push(end_date);
+    }
+    
+    db.all(sql, sqlParams, async (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      const data = rows.map(row => (
+        {
+          ...row,
+          phone_number: JSON.parse(row.phone_number)
+        }
+      ));
+      
+      const inactives = await Promise.all(data.map(async abon => {
+        let isPositiveBalance = false;
+        if (!!abon.account_id && !!abon.n_result_id) {
+          let balance = await getAbonBalance(abon.account_id, abon.n_result_id);
+          
+          if (balance?.status === 403) {
+            console.log("Срок действия токена истёк. Идёт переавторизация...");
+            const token = await authorize();
+            if (!token) {
+              return res.status(500).send("Авторизация не удалась");
+            }
+            balance = await getAbonBalance(abon.account_id, abon.n_result_id);
+          }
+          isPositiveBalance = balance >= 0;
+        } else isPositiveBalance = false;
+        return isPositiveBalance ? null : abon;
+      }));
+      res.status(200).send(inactives.filter(inactive => !!inactive));
+    });
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
 cardsRouter.post('/create_card', (req, res) => {
   try {
     const {
@@ -290,15 +309,21 @@ cardsRouter.post('/create_card', (req, res) => {
       spec_full_name,
       full_name,
       address,
+      account_id,
+      n_result_id,
+      mac_address,
+      ip_address,
+      mac_onu,
+      ip_olt,
       reason_id,
       solution_id,
-      comment
+      comment = ''
     } = req.body;
     if (!ls_abon || !phone_number || !sip || !spec_full_name || !full_name || !address || !reason_id) return res.status(400)
     .json({
       error: 'Поля ls_abon, phone_number, sip, spec_full_name, full_name, address, reason_id обязательны'
     });
-    const sql = 'INSERT INTO cards (ls_abon, phone_number, sip, spec_full_name, full_name, address, reason_id, solution_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    const sql = 'INSERT INTO cards (ls_abon, phone_number, sip, spec_full_name, full_name, address, account_id, n_result_id, mac_address, ip_address, mac_onu, ip_olt, reason_id, solution_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     
     db.run(sql, [
       ls_abon,
@@ -307,9 +332,15 @@ cardsRouter.post('/create_card', (req, res) => {
       spec_full_name,
       full_name,
       address,
+      account_id || '',
+      n_result_id || '',
+      mac_address || '',
+      ip_address || '',
+      mac_onu || '',
+      ip_olt || '',
       reason_id,
       solution_id,
-      comment
+      comment || '',
     ], function (err) {
       if (err) return res.status(500).json({
         error: ERROR_MESSAGES[err.message] || err.message

@@ -1,29 +1,12 @@
 import express from "express";
 import axios from 'axios';
+import { authorize, token } from "../constants.js";
 
 const hydraSeekerRouter = express();
-const login = 'asyl';
-const password = '*hjvfirf';
-let token = '';
-
-const authorize = async () => {
-  try {
-    const req = await axios.post(`https://hydra.snt.kg:8000/rest/v2/login`, {
-      session: {
-        login,
-        password
-      }
-    });
-    
-    return await req.data?.session?.token;
-  } catch (e) {
-    return e.message;
-  }
-};
 
 const abonSeeker = async (query) => {
   try {
-    const isPhoneNumber = !!query.startsWith('996');
+    const isPhoneNumber = query.startsWith('996');
     const abons_by_n_result_id = [];
     const search_by_ls = await axios(`https://hydra.snt.kg:8000/rest/v2/search?query=${query}`, {
       headers: {
@@ -50,6 +33,8 @@ const abonSeeker = async (query) => {
             Authorization: `Token token=${token}`
           }
         });
+        const account_id = reqToLsAbon.data.accounts[0].n_account_id;
+        
         const ls_abon = reqToLsAbon.data.accounts[0].vc_account;
         
         const reqToAbonAddress = await axios(`https://hydra.snt.kg:8000/rest/v2/subjects/persons/${n_base_subject_id}/addresses`, {
@@ -99,6 +84,8 @@ const abonSeeker = async (query) => {
           ip_address,
           mac_address,
           ls_abon,
+          account_id,
+          n_result_id,
           phone_number,
           address,
         });
@@ -119,9 +106,9 @@ hydraSeekerRouter.get('/:ls_abon', async (req, res) => {
     const { ls_abon } = req.params;
     let foundAbon = await abonSeeker(ls_abon);
     
-    if (foundAbon.status === 403) {
+    if (foundAbon?.status === 403) {
       console.log("Срок действия токена истёк. Идёт переавторизация...");
-      token = await authorize();
+      const token = await authorize();
       if (!token) {
         return res.status(500).send("Авторизация не удалась");
       }

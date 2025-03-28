@@ -4,8 +4,7 @@ const dbPath = './db/db.sqlite';
 
 const verbose = sqlite3.verbose();
 const db = new verbose.Database(dbPath, (err) => {
-  if (err) console.error('Error opening database:', err.message);
-  else console.log('Connected to SQLite database.');
+  if (err) console.error('Error opening database:', err.message); else console.log('Connected to SQLite database.');
 });
 
 db.exec('PRAGMA foreign_keys = ON;');
@@ -30,7 +29,7 @@ db.run(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
+    full_name TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
     password TEXT NOT NULL,
     sip TEXT NOT NULL,
@@ -42,11 +41,17 @@ db.run(`
   CREATE TABLE IF NOT EXISTS cards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     ls_abon TEXT,
+    account_id TEXT,
+    n_result_id TEXT,
     phone_number TEXT,
     sip TEXT,
     spec_full_name TEXT,
     full_name TEXT,
     address TEXT,
+    ip_address TEXT,
+    mac_address TEXT,
+    mac_onu TEXT,
+    ip_olt TEXT,
     comment TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     reason_id INTEGER NOT NULL,
