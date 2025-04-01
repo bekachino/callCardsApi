@@ -58,12 +58,16 @@ cardsRouter.get('/', (req, res) => {
       start_date,
       end_date
     } = req.query;
+    const isUser = req.user.role === 'user';
+    
     
     let sql;
     let sqlParams = [];
     
     if (!start_date && !end_date) {
-      sql = initialGetCardsSql;
+      sql = `
+        ${initialGetCardsSql}
+      `;
     } else {
       sql = `
         ${initialGetCardsSql}
@@ -72,13 +76,25 @@ cardsRouter.get('/', (req, res) => {
       if (!!start_date) sqlParams.push(start_date);
       if (!!end_date) sqlParams.push(end_date);
     }
+    if (isUser && !!req.user.sip) {
+      sql += isUser ? `\nWHERE C.sip = ?` : ''
+      sqlParams.push(req.user.sip);
+    }
     
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       res.json(rows.map(row => (
         {
           ...row,
-          phone_number: JSON.parse(row.phone_number)
+          phone_number: JSON.parse(row.phone_number),
+          reason: row.reason_id ? {
+            id: row.reason_id,
+            title: row.reason_title
+          } : null,
+          solution: row.solution_id ? {
+            id: row.solution_id,
+            title: row.solution_title
+          } : null,
         }
       )));
     });
@@ -93,6 +109,7 @@ cardsRouter.get('/stats_by_reason', (req, res) => {
       start_date,
       end_date
     } = req.query;
+    const isUser = req.user.role === 'user';
     let sql;
     let sqlParams = [];
     const result = {};
@@ -107,11 +124,15 @@ cardsRouter.get('/stats_by_reason', (req, res) => {
       if (!!start_date) sqlParams.push(start_date);
       if (!!end_date) sqlParams.push(end_date);
     }
+    if (isUser && !!req.user.sip) {
+      sql += isUser ? `\nWHERE C.sip = ?` : ''
+      sqlParams.push(req.user.sip);
+    }
     
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       rows.forEach(card => {
-        !!result[card.reason] ? result[card.reason]++ : result[card.reason] = 1;
+        !!result[card.reason_title] ? result[card.reason_title]++ : result[card.reason_title] = 1;
       });
       res.json(Object.keys(result).map(key => (
         {
@@ -131,6 +152,7 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
       start_date,
       end_date
     } = req.query;
+    const isUser = req.user.role === 'user';
     let sql;
     let sqlParams = [];
     const result = {};
@@ -145,13 +167,23 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
       if (!!start_date) sqlParams.push(start_date);
       if (!!end_date) sqlParams.push(end_date);
     }
+    if (isUser && !!req.user.sip) {
+      sql += isUser ? `\nWHERE C.sip = ?` : ''
+      sqlParams.push(req.user.sip);
+    }
     
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       rows.forEach(card => {
-        !!result[card.solution] ? result[card.solution].count++ : result[card.solution] = {
-          reason: card.reason,
-          solution: card.solution,
+        !!result[card.solution_title] ? result[card.solution_title].count++ : result[card.solution_title] = {
+          reason: card.reason_id ? {
+            id: card.reason_id,
+            title: card.reason_title
+          } : null,
+          solution: card.solution_id ? {
+            id: card.solution_id,
+            title: card.solution_title
+          } : null,
           count: 1,
         };
       });
@@ -172,7 +204,7 @@ cardsRouter.get('/report', (req, res) => {
       start_date,
       end_date
     } = req.query;
-    
+    const isUser = req.user.role === 'user';
     let sql;
     let sqlParams = [];
     const result = {};
@@ -186,6 +218,10 @@ cardsRouter.get('/report', (req, res) => {
       `;
       if (!!start_date) sqlParams.push(start_date);
       if (!!end_date) sqlParams.push(end_date);
+    }
+    if (isUser && !!req.user.sip) {
+      sql += isUser ? `\nWHERE C.sip = ?` : ''
+      sqlParams.push(req.user.sip);
     }
     
     db.all(sql, sqlParams, (err, rows) => {
@@ -214,7 +250,7 @@ cardsRouter.get('/repeated_calls', (req, res) => {
       start_date,
       end_date
     } = req.query;
-    
+    const isUser = req.user.role === 'user';
     let sql;
     let sqlParams = [];
     
@@ -228,6 +264,10 @@ cardsRouter.get('/repeated_calls', (req, res) => {
       if (!!start_date) sqlParams.push(start_date);
       if (!!end_date) sqlParams.push(end_date);
     }
+    if (isUser && !!req.user.sip) {
+      sql += isUser ? `\nWHERE C.sip = ?` : ''
+      sqlParams.push(req.user.sip);
+    }
     
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -235,7 +275,15 @@ cardsRouter.get('/repeated_calls', (req, res) => {
       const rawData = rows.map(row => (
         {
           ...row,
-          phone_number: JSON.parse(row.phone_number)
+          phone_number: JSON.parse(row.phone_number),
+          reason: row.reason_id ? {
+            id: row.reason_id,
+            title: row.reason_title
+          } : null,
+          solution: row.solution_id ? {
+            id: row.solution_id,
+            title: row.solution_title
+          } : null,
         }
       ));
       const groupedData = formatRepeatedCalls(rawData);
@@ -252,7 +300,7 @@ cardsRouter.get('/inactives', async (req, res) => {
       start_date,
       end_date
     } = req.query;
-    
+    const isUser = req.user.role === 'user';
     let sql;
     let sqlParams = [];
     
@@ -266,13 +314,25 @@ cardsRouter.get('/inactives', async (req, res) => {
       if (!!start_date) sqlParams.push(start_date);
       if (!!end_date) sqlParams.push(end_date);
     }
+    if (isUser && !!req.user.sip) {
+      sql += isUser ? `\nWHERE C.sip = ?` : ''
+      sqlParams.push(req.user.sip);
+    }
     
     db.all(sql, sqlParams, async (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       const data = rows.map(row => (
         {
           ...row,
-          phone_number: JSON.parse(row.phone_number)
+          phone_number: JSON.parse(row.phone_number),
+          reason: row.reason_id ? {
+            id: row.reason_id,
+            title: row.reason_title
+          } : null,
+          solution: row.solution_id ? {
+            id: row.solution_id,
+            title: row.solution_title
+          } : null,
         }
       ));
       
@@ -305,6 +365,7 @@ cardsRouter.post('/create_card', (req, res) => {
     const {
       ls_abon,
       phone_number,
+      call_from,
       sip,
       spec_full_name,
       full_name,
@@ -319,15 +380,18 @@ cardsRouter.post('/create_card', (req, res) => {
       solution_id,
       comment = ''
     } = req.body;
-    if (!ls_abon || !phone_number || !sip || !spec_full_name || !full_name || !address || !reason_id) return res.status(400)
+    if (!ls_abon || (
+      !phone_number || !!phone_number && !Array.isArray(phone_number)
+    ) || !sip || !spec_full_name || !full_name || !address || !reason_id) return res.status(400)
     .json({
       error: 'Поля ls_abon, phone_number, sip, spec_full_name, full_name, address, reason_id обязательны'
     });
-    const sql = 'INSERT INTO cards (ls_abon, phone_number, sip, spec_full_name, full_name, address, account_id, n_result_id, mac_address, ip_address, mac_onu, ip_olt, reason_id, solution_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    const sql = 'INSERT INTO cards (ls_abon, phone_number, call_from, sip, spec_full_name, full_name, address, account_id, n_result_id, mac_address, ip_address, mac_onu, ip_olt, reason_id, solution_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     
     db.run(sql, [
       ls_abon,
       JSON.stringify(phone_number),
+      call_from,
       sip,
       spec_full_name,
       full_name,

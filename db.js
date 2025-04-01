@@ -44,6 +44,7 @@ db.run(`
     account_id TEXT,
     n_result_id TEXT,
     phone_number TEXT,
+    call_from TEXT,
     sip TEXT,
     spec_full_name TEXT,
     full_name TEXT,

@@ -115,6 +115,8 @@ hydraSeekerRouter.get('/:ls_abon', async (req, res) => {
       foundAbon = await abonSeeker(ls_abon);
     }
     
+    if (!!foundAbon.message) return res.status(403).send({message: foundAbon.message});
+    
     res.status(200).send(foundAbon);
   } catch (e) {
     res.status(500).send(e.message);
