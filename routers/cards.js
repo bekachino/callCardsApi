@@ -60,7 +60,6 @@ cardsRouter.get('/', (req, res) => {
     } = req.query;
     const isUser = req.user.role === 'user';
     
-    
     let sql;
     let sqlParams = [];
     
