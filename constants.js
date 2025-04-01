@@ -23,10 +23,10 @@ export const initialGetCardsSql = `
    C.mac_onu,
    C.ip_olt,
    C.comment,
-   R.id AS reason_id,
-  R.title AS reason_title,
-  S.id AS solution_id,
-  S.title AS solution_title from cards as C
+   R.id as reason_id,
+  R.title as reason_title,
+  S.id as solution_id,
+  S.title as solution_title from cards as C
   left join reasons as R on R.id = C.reason_id
   left join solutions as S on S.id = C.solution_id
 `;

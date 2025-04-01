@@ -18,10 +18,27 @@ actionsTreeRouter.get('/reasons', (req, res) => {
 
 actionsTreeRouter.get('/solutions', (req, res) => {
   try {
-    const sql = 'SELECT * FROM solutions';
+    const sql = `
+      SELECT
+      S.id AS solution_id,
+      S.title AS solution_title,
+      R.id AS reason_id,
+      R.title AS reason_title
+      FROM solutions AS S
+      LEFT JOIN reasons AS R ON S.reason_id = R.id;
+    `;
     db.all(sql, [], (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json(rows);
+      res.json(rows.map(row => (
+        {
+          id: row.solution_id,
+          title: row.solution_title,
+          reason: row.reason_id ? {
+            id: row.reason_id,
+            title: row.reason_title
+          } : null
+        }
+      )));
     });
   } catch (e) {
     res.status(500).send(e.message);
