@@ -9,7 +9,7 @@ import pg from 'pg';
 import auth from "./middleware/auth.js";
 
 const app = express();
-const PORT = 8000;
+const PORT = 8010;
 const corsOptions = {
   origin: "*",
 };
