@@ -30,7 +30,7 @@ const formatRepeatedCalls = rawData => {
     grouped[key].count += 1;
   });
   
-  return Object.values(grouped).map(item => item?.count > 1);
+  return Object.values(grouped).filter(item => item?.count > 1);
 };
 
 const getAbonBalance = async (account_id, n_result_id) => {
