@@ -46,6 +46,6 @@ app.listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
 });
 
-planup.connect()
-.then(() => console.log("Connected to PostgreSQL"))
-.catch((err) => console.error("Connection error", err));
+//planup.connect()
+//.then(() => console.log("Connected to PostgreSQL"))
+//.catch((err) => console.error("Connection error", err));

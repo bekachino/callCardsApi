@@ -47,7 +47,7 @@ const getAbonBalance = async (account_id, n_result_id) => {
     return {
       message: e.message,
       url: e.config.url,
-      status: 403
+      status: 404
     };
   }
 };
@@ -58,7 +58,7 @@ cardsRouter.get('/', (req, res) => {
       start_date,
       end_date
     } = req.query;
-    const isUser = req.user.role === 'user';
+    const isUser = req.user?.role === 'user';
     
     let sql;
     let sqlParams = [];
@@ -108,7 +108,7 @@ cardsRouter.get('/stats_by_reason', (req, res) => {
       start_date,
       end_date
     } = req.query;
-    const isUser = req.user.role === 'user';
+    const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
     const result = {};
@@ -151,7 +151,7 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
       start_date,
       end_date
     } = req.query;
-    const isUser = req.user.role === 'user';
+    const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
     const result = {};
@@ -203,7 +203,7 @@ cardsRouter.get('/report', (req, res) => {
       start_date,
       end_date
     } = req.query;
-    const isUser = req.user.role === 'user';
+    const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
     const result = {};
@@ -249,7 +249,7 @@ cardsRouter.get('/repeated_calls', (req, res) => {
       start_date,
       end_date
     } = req.query;
-    const isUser = req.user.role === 'user';
+    const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
     
@@ -299,7 +299,7 @@ cardsRouter.get('/inactives', async (req, res) => {
       start_date,
       end_date
     } = req.query;
-    const isUser = req.user.role === 'user';
+    const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
     
@@ -340,7 +340,7 @@ cardsRouter.get('/inactives', async (req, res) => {
         if (!!abon.account_id && !!abon.n_result_id) {
           let balance = await getAbonBalance(abon.account_id, abon.n_result_id);
           
-          if (balance?.status === 403) {
+          if (balance?.status === 404) {
             console.log("Срок действия токена истёк. Идёт переавторизация...");
             const token = await authorize();
             if (!token) {
@@ -349,7 +349,7 @@ cardsRouter.get('/inactives', async (req, res) => {
             balance = await getAbonBalance(abon.account_id, abon.n_result_id);
           }
           isPositiveBalance = balance >= 0;
-        } else isPositiveBalance = false;
+        } else isPositiveBalance = true;
         return isPositiveBalance ? null : abon;
       }));
       res.status(200).send(inactives.filter(inactive => !!inactive));
