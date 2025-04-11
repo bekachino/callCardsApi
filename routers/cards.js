@@ -82,7 +82,7 @@ cardsRouter.get('/', (req, res) => {
     
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json(rows.map(row => (
+      res.json(rows.reverse().map(row => (
         {
           ...row,
           phone_number: JSON.parse(row.phone_number),
@@ -133,7 +133,7 @@ cardsRouter.get('/stats_by_reason', (req, res) => {
       rows.forEach(card => {
         !!result[card.reason_title] ? result[card.reason_title]++ : result[card.reason_title] = 1;
       });
-      res.json(Object.keys(result).map(key => (
+      res.json(Object.keys(result).reverse().map(key => (
         {
           reason: key,
           count: result[key]
@@ -186,7 +186,7 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
           count: 1,
         };
       });
-      res.json(Object.keys(result).map(key => (
+      res.json(Object.keys(result).reverse().map(key => (
         {
           ...result[key]
         }
@@ -236,7 +236,7 @@ cardsRouter.get('/report', (req, res) => {
           result[card.sip].count++;
         }
       });
-      res.json(Object.keys(result).map(sipKey => result[sipKey]));
+      res.json(Object.keys(result).reverse().map(sipKey => result[sipKey]));
     });
   } catch (e) {
     res.status(500).send(e.message);
@@ -271,7 +271,7 @@ cardsRouter.get('/repeated_calls', (req, res) => {
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       
-      const rawData = rows.map(row => (
+      const rawData = rows.reverse().map(row => (
         {
           ...row,
           phone_number: JSON.parse(row.phone_number),
@@ -320,7 +320,7 @@ cardsRouter.get('/inactives', async (req, res) => {
     
     db.all(sql, sqlParams, async (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      const data = rows.map(row => (
+      const data = rows.reverse().map(row => (
         {
           ...row,
           phone_number: JSON.parse(row.phone_number),
