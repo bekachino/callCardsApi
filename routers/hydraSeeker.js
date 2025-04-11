@@ -56,28 +56,41 @@ const abonSeeker = async (query) => {
         const full_name = abonRes.data.customer?.vc_base_subject_name || '-';
         const created_at = abonRes.data.customer?.d_created || '';
         
-        if (!reqToEquipments.data.equipment?.length) return { message: 'Отсутсвует оборудрование' }
+        //if (!reqToEquipments.data.equipment?.length) return { message:
+        // 'Отсутсвует оборудрование' }
         
         const device_id = reqToEquipments.data.equipment[0]?.n_object_id;
         
-        if (!device_id) return { message: 'Отсутсвует id device_id' }
+        //if (!device_id) return { message: 'Отсутсвует id device_id' }
         
-        const get_device_n_object_id = await axios(`https://hydra.snt.kg:8000/rest/v2/objects/net_devices/${device_id}/entries/`, {
-          headers: {
-            Authorization: `Token token=${token}`
-          }
-        });
-        const entry_id = get_device_n_object_id.data.entries[0]?.n_object_id;
+        let get_device_n_object_id = null;
+        let entry_id = null;
         
-        if (!entry_id) return { message: 'Отсутсвует id entry_id' }
+        if (!!device_id) {
+          get_device_n_object_id = await axios(`https://hydra.snt.kg:8000/rest/v2/objects/net_devices/${device_id}/entries/`, {
+            headers: {
+              Authorization: `Token token=${token}`
+            }
+          });
+          entry_id = get_device_n_object_id.data.entries[0]?.n_object_id;
+        }
         
-        const getDeviceInfo = await axios(`https://hydra.snt.kg:8000/rest/v2/objects/net_devices/${device_id}/entries/${entry_id}/addresses/`, {
-          headers: {
-            Authorization: `Token token=${token}`
-          }
-        });
-        const ip_address = getDeviceInfo.data.addresses[0].vc_code;
-        const mac_address = getDeviceInfo.data.addresses[1].vc_code;
+        //if (!entry_id) return { message: 'Отсутсвует id entry_id' }
+        
+        let getDeviceInfo = null;
+        let ip_address = null;
+        let mac_address = null;
+        
+        if (!!device_id && !!entry_id) {
+          getDeviceInfo = await axios(`https://hydra.snt.kg:8000/rest/v2/objects/net_devices/${device_id}/entries/${entry_id}/addresses/`, {
+            headers: {
+              Authorization: `Token token=${token}`
+            }
+          });
+          ip_address = getDeviceInfo.data.addresses[0].vc_code;
+          mac_address = getDeviceInfo.data.addresses[1].vc_code;
+        }
+        
         abons_by_n_result_id.push({
           full_name,
           created_at,
@@ -115,7 +128,7 @@ hydraSeekerRouter.get('/:ls_abon', async (req, res) => {
       foundAbon = await abonSeeker(ls_abon);
     }
     
-    if (!!foundAbon.message) return res.status(403).send({message: foundAbon.message});
+    if (!!foundAbon.message) return res.status(403).send({ message: foundAbon.message });
     
     res.status(200).send(foundAbon);
   } catch (e) {
