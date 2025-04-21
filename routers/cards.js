@@ -214,8 +214,6 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
 cardsRouter.get('/report', (req, res) => {
   try {
     const {
-      page = '1',
-      page_size = '100',
       start_date,
       end_date
     } = req.query;
@@ -223,8 +221,6 @@ cardsRouter.get('/report', (req, res) => {
     let sql;
     let sqlParams = [];
     const result = {};
-    const pageNum = parseInt(page) || 1;
-    const pageSize = parseInt(page_size) || 100;
     
     if (!start_date && !end_date) {
       sql = initialGetCardsSql;
@@ -328,16 +324,12 @@ cardsRouter.get('/repeated_calls', (req, res) => {
 cardsRouter.get('/inactives', async (req, res) => {
   try {
     const {
-      page = '1',
-      page_size = '100',
       start_date,
       end_date
     } = req.query;
     const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
-    const pageNum = parseInt(page) || 1;
-    const pageSize = parseInt(page_size) || 100;
     
     if (!start_date && !end_date) {
       sql = initialGetCardsSql;
@@ -356,8 +348,11 @@ cardsRouter.get('/inactives', async (req, res) => {
     
     db.all(sql, sqlParams, async (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      const data = rows.reverse().map(row => (
-        {
+      
+      const groupedData = {};
+      
+      rows.reverse().forEach(row => {
+        groupedData[row?.ls_abon] = {
           ...row,
           phone_number: JSON.parse(row.phone_number),
           reason: row.reason_id ? {
@@ -368,10 +363,11 @@ cardsRouter.get('/inactives', async (req, res) => {
             id: row.solution_id,
             title: row.solution_title
           } : null,
-        }
-      ));
+        };
+      });
       
-      const inactives = await Promise.all(data.map(async abon => {
+      const abonsData = await Promise.all(Object.values(groupedData).map(async abon => {
+        console.log(abon);
         let isPositiveBalance = false;
         if (!!abon.account_id && !!abon.n_result_id) {
           let balance = await getAbonBalance(abon.account_id, abon.n_result_id);
@@ -388,7 +384,10 @@ cardsRouter.get('/inactives', async (req, res) => {
         } else isPositiveBalance = true;
         return isPositiveBalance ? null : abon;
       }));
-      res.status(200).send(inactives.filter(inactive => !!inactive));
+      
+      const inactives = abonsData.filter(inactive => !!inactive);
+      
+      res.status(200).send(inactives);
     });
   } catch (e) {
     res.status(500).send(e.message);

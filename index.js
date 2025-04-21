@@ -18,7 +18,7 @@ app.use(express.json());
 app.use('/', authRouter);
 app.use('/users', auth, usersRouter);
 app.use('/actions_tree', auth, actionsTreeRouter);
-app.use('/cards', cardsRouter);
+app.use('/cards', auth, cardsRouter);
 app.use('/hydra_seeker', auth, hydraSeekerRouter);
 
 app.listen(PORT, () => {
