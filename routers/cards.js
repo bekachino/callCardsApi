@@ -1,10 +1,7 @@
 import db from "../db.js";
 import express from "express";
 import {
-  authorize,
-  ERROR_MESSAGES,
-  initialGetCardsSql,
-  token
+  authorize, ERROR_MESSAGES, initialGetCardsSql, token
 } from "../constants.js";
 import axios from "axios";
 
@@ -55,10 +52,15 @@ const getAbonBalance = async (account_id, n_result_id) => {
 cardsRouter.get('/', (req, res) => {
   try {
     const {
+      page = '1',
+      page_size = '100',
       start_date,
-      end_date
+      end_date,
     } = req.query;
     const isUser = req.user?.role === 'user';
+    
+    const pageNum = parseInt(page) || 1;
+    const pageSize = parseInt(page_size) || 100;
     
     let sql;
     let sqlParams = [];
@@ -82,7 +84,13 @@ cardsRouter.get('/', (req, res) => {
     
     db.all(sql, sqlParams, (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
-      res.json(rows.reverse().map(row => (
+      
+      const total_results = rows.length;
+      const total_pages = Math.ceil(total_results / pageSize);
+      const paginatedResults = rows.reverse().slice((
+        pageNum - 1
+      ) * pageSize, pageNum * pageSize);
+      const formattedResults = paginatedResults.map(row => (
         {
           ...row,
           phone_number: JSON.parse(row.phone_number),
@@ -95,7 +103,13 @@ cardsRouter.get('/', (req, res) => {
             title: row.solution_title
           } : null,
         }
-      )));
+      ))
+      
+      res.json({
+        total_results,
+        total_pages,
+        result: formattedResults
+      });
     });
   } catch (e) {
     res.status(500).send(e.message);
@@ -200,6 +214,8 @@ cardsRouter.get('/stats_by_solution', (req, res) => {
 cardsRouter.get('/report', (req, res) => {
   try {
     const {
+      page = '1',
+      page_size = '100',
       start_date,
       end_date
     } = req.query;
@@ -207,6 +223,8 @@ cardsRouter.get('/report', (req, res) => {
     let sql;
     let sqlParams = [];
     const result = {};
+    const pageNum = parseInt(page) || 1;
+    const pageSize = parseInt(page_size) || 100;
     
     if (!start_date && !end_date) {
       sql = initialGetCardsSql;
@@ -246,12 +264,16 @@ cardsRouter.get('/report', (req, res) => {
 cardsRouter.get('/repeated_calls', (req, res) => {
   try {
     const {
+      page = '1',
+      page_size = '100',
       start_date,
       end_date
     } = req.query;
     const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
+    const pageNum = parseInt(page) || 1;
+    const pageSize = parseInt(page_size) || 100;
     
     if (!start_date && !end_date) {
       sql = initialGetCardsSql;
@@ -286,7 +308,17 @@ cardsRouter.get('/repeated_calls', (req, res) => {
         }
       ));
       const groupedData = formatRepeatedCalls(rawData);
-      res.send(groupedData);
+      
+      const total_results = groupedData.length;
+      const total_pages = Math.ceil(total_results / pageSize);
+      const paginatedResults = groupedData.slice((
+        pageNum - 1
+      ) * pageSize, pageNum * pageSize);
+      res.json({
+        total_results,
+        total_pages,
+        result: paginatedResults,
+      });
     });
   } catch (e) {
     res.status(500).send(e.message);
@@ -296,12 +328,16 @@ cardsRouter.get('/repeated_calls', (req, res) => {
 cardsRouter.get('/inactives', async (req, res) => {
   try {
     const {
+      page = '1',
+      page_size = '100',
       start_date,
       end_date
     } = req.query;
     const isUser = req.user?.role === 'user';
     let sql;
     let sqlParams = [];
+    const pageNum = parseInt(page) || 1;
+    const pageSize = parseInt(page_size) || 100;
     
     if (!start_date && !end_date) {
       sql = initialGetCardsSql;
