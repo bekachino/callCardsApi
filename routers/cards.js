@@ -1,9 +1,7 @@
 import db from "../db.js";
 import express from "express";
-import {
-  authorize, ERROR_MESSAGES, initialGetCardsSql, token
-} from "../constants.js";
-import axios from "axios";
+import { ERROR_MESSAGES, initialGetCardsSql } from "../constants.js";
+import getBalances from "../utils.js";
 
 const cardsRouter = express();
 
@@ -28,25 +26,6 @@ const formatRepeatedCalls = rawData => {
   });
   
   return Object.values(grouped).filter(item => item?.count > 1);
-};
-
-const getAbonBalance = async (account_id, n_result_id) => {
-  try {
-    const reqToBalance = await axios(`https://hydra.snt.kg:8000/rest/v2/subjects/customers/${n_result_id}/accounts/${account_id}`, {
-      headers: {
-        Authorization: `Token token=${token}`
-      }
-    });
-    
-    const balance = reqToBalance?.data?.account?.n_sum_bal;
-    if (!!balance) return parseFloat(balance);
-  } catch (e) {
-    return {
-      message: e.message,
-      url: e.config.url,
-      status: 404
-    };
-  }
 };
 
 cardsRouter.get('/', (req, res) => {
@@ -407,48 +386,31 @@ cardsRouter.get('/inactives', async (req, res) => {
     db.all(sql, sqlParams, async (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
       
-      const groupedData = {};
-      
-      rows.reverse().forEach(row => {
-        groupedData[row?.ls_abon] = {
-          ...row,
-          phone_number: JSON.parse(row.phone_number),
-          reason: row.reason_id ? {
-            id: row.reason_id,
-            title: row.reason_title
-          } : null,
-          solution: row.solution_id ? {
-            id: row.solution_id,
-            title: row.solution_title
-          } : null,
+      const accountIds = rows.reverse().map(abon => abon?.account_id);
+      const balances = await getBalances(accountIds);
+      const abonsWithBalance = rows.map(abon => {
+        const balance = balances.find(abonResult => `${abonResult[0]}` === `${abon?.account_id}`)?.[1];
+        return {
+          ...abon,
+          balance,
         };
       });
-      
-      console.log(rows);
-      
-      const abonsData = await Promise.all(Object.values(groupedData).map(async abon => {
-        let isPositiveBalance = false;
-        if (!!abon.account_id && !!abon.n_result_id) {
-          let balance = await getAbonBalance(abon.account_id, abon.n_result_id);
-          
-          if (balance?.status === 404) {
-            console.log("Срок действия токена истёк. Идёт переавторизация...");
-            const token = await authorize();
-            if (!token) {
-              return res.status(500).send("Авторизация не удалась");
-            }
-            balance = await getAbonBalance(abon.account_id, abon.n_result_id);
-          }
-          isPositiveBalance = balance >= 0;
-        } else isPositiveBalance = true;
-        return isPositiveBalance ? null : abon;
+      const inactives = abonsWithBalance.filter(abon => abon?.balance < 0).map(abon => ({
+        ...abon,
+        phone_number: JSON.parse(abon.phone_number),
+        reason: abon.reason_id ? {
+          id: abon.reason_id,
+          title: abon.reason_title
+        } : null,
+        solution: abon.solution_id ? {
+          id: abon.solution_id,
+          title: abon.solution_title
+        } : null,
       }));
-      
-      const inactives = abonsData.filter(inactive => !!inactive);
-      
-      res.status(200).send(inactives);
+      res.json(inactives);
     });
   } catch (e) {
+    console.log(e, 1);
     res.status(500).send(e.message);
   }
 });
