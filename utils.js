@@ -1,6 +1,9 @@
 import oracledb from "oracledb";
 
 const ORACLE_CLIENT_PATH = process.env.ORACLE_CLIENT_PATH;
+const HYDRA_ORACLE_USER = process.env.HYDRA_ORACLE_USER;
+const HYDRA_ORACLE_PASSWORD = process.env.HYDRA_ORACLE_PASSWORD;
+const HYDRA_ORACLE_CONNECT_STRING = process.env.HYDRA_ORACLE_CONNECT_STRING;
 
 oracledb.initOracleClient({ libDir: ORACLE_CLIENT_PATH });
 
@@ -9,9 +12,9 @@ export default async function getBalances(accountIds) {
   
   try {
     connection = await oracledb.getConnection({
-      user: 'AIS_NET',
-      password: 'AeFae0eeleatohraelah',
-      connectString: 'hydra.snt.kg:1521/hydra',
+      user: HYDRA_ORACLE_USER,
+      password: HYDRA_ORACLE_PASSWORD,
+      connectString: HYDRA_ORACLE_CONNECT_STRING,
     });
     
     const numberTableType = await connection.getDbObjectClass('NUMBER_TABLE');
