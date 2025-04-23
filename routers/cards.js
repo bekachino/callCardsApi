@@ -353,25 +353,55 @@ cardsRouter.get('/inactives', async (req, res) => {
   try {
     const {
       start_date,
-      end_date
+      end_date,
+      reason,
+      solution,
+      sip = [],
     } = req.query;
+    
+    const reasonIds = typeof reason === 'string' ? reason.split(',') : reason;
+    const solutionIds = typeof solution === 'string' ? solution.split(',') : solution;
+    const sipList = typeof sip === 'string' ? sip.split(',') : sip;
+    
     const isUser = req.user?.role === 'user';
-    let sql;
+    let sql = `${initialGetCardsSql}`;
+    let whereClauses = [];
     let sqlParams = [];
     
-    if (!start_date && !end_date) {
-      sql = initialGetCardsSql;
-    } else {
-      sql = `
-        ${initialGetCardsSql}
-        WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
-      `;
-      if (!!start_date) sqlParams.push(start_date);
-      if (!!end_date) sqlParams.push(end_date);
+    if (start_date) {
+      whereClauses.push('C.created_at >= ?');
+      sqlParams.push(start_date);
     }
-    if (isUser && !!req.user.sip) {
-      sql += isUser ? `\nWHERE C.sip = ?` : ''
+    if (end_date) {
+      whereClauses.push('C.created_at <= ?');
+      sqlParams.push(end_date);
+    }
+    
+    if (isUser && req.user?.sip) {
+      whereClauses.push('C.sip = ?');
       sqlParams.push(req.user.sip);
+    }
+    
+    if (Array.isArray(reasonIds) && reasonIds.length > 0) {
+      const placeholders = reasonIds.map(() => '?').join(', ');
+      whereClauses.push(`C.reason_id IN (${placeholders})`);
+      sqlParams.push(...reasonIds);
+    }
+    
+    if (Array.isArray(solutionIds) && solutionIds.length > 0) {
+      const placeholders = solutionIds.map(() => '?').join(', ');
+      whereClauses.push(`C.solution_id IN (${placeholders})`);
+      sqlParams.push(...solutionIds);
+    }
+    
+    if (Array.isArray(sipList) && sipList.length > 0) {
+      const placeholders = sipList.map(() => '?').join(', ');
+      whereClauses.push(`C.sip IN (${placeholders})`);
+      sqlParams.push(...sipList);
+    }
+    
+    if (whereClauses.length > 0) {
+      sql += '\nWHERE ' + whereClauses.join(' AND ');
     }
     
     db.all(sql, sqlParams, async (err, rows) => {
@@ -393,6 +423,8 @@ cardsRouter.get('/inactives', async (req, res) => {
           } : null,
         };
       });
+      
+      console.log(rows);
       
       const abonsData = await Promise.all(Object.values(groupedData).map(async abon => {
         let isPositiveBalance = false;
