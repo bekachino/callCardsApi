@@ -62,4 +62,14 @@ db.run(`
   );
 `);
 
+db.run(`
+  CREATE TABLE IF NOT EXISTS checkins (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    check_in_time TEXT NOT NULL,
+    check_out_time TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+`);
+
 export default db;
