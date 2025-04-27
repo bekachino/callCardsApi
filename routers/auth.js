@@ -27,10 +27,13 @@ authRouter.post("/sign-up", async (req, res) => {
   
   if (![
     "admin",
-    "user"
+    "user",
+    "senior_spec"
   ].includes(role)) {
     return res.status(400).json({ message: "Неверная роль" });
   }
+  
+  const is_senior_spec = role === 'senior_spec';
   
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -42,7 +45,8 @@ authRouter.post("/sign-up", async (req, res) => {
       role,
       hashedPassword,
       sip,
-      phone_number
+      phone_number,
+      is_senior_spec ? 1 : 0
     ], function (err) {
       if (err) {
         return res.status(400).json({ message: "Имя пользователя занято" });
