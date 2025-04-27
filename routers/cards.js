@@ -441,35 +441,57 @@ cardsRouter.post('/create_card', (req, res) => {
     .json({
       error: 'Поля ls_abon, phone_number, sip, spec_full_name, full_name, address, reason_id обязательны'
     });
-    const sql = 'INSERT INTO cards (ls_abon, phone_number, call_from, sip, spec_full_name, full_name, address, account_id, n_result_id, mac_address, ip_address, mac_onu, ip_olt, reason_id, solution_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     
-    db.run(sql, [
-      ls_abon,
-      JSON.stringify(phone_number),
-      call_from,
-      sip,
-      spec_full_name,
-      full_name,
-      address,
-      account_id || '',
-      n_result_id || '',
-      mac_address || '',
-      ip_address || '',
-      mac_onu || '',
-      ip_olt || '',
-      reason_id,
-      solution_id,
-      comment || '',
-    ], function (err) {
-      if (err) return res.status(500).json({
-        error: ERROR_MESSAGES[err.message] || err.message
-      });
-      res.json({
-        id: this.lastID,
+    // Find all checked-in senior specialists
+    const findSeniorSpecsSql = `
+      SELECT u.id
+      FROM users u
+      LEFT JOIN checkins c ON u.id = c.user_id AND c.check_out_time IS NULL
+      WHERE u.is_senior_spec = 1 AND c.id IS NOT NULL
+    `;
+    
+    db.all(findSeniorSpecsSql, [], (err, seniorSpecs) => {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      const seniorSpecNames = seniorSpecs.map(user => user.full_name);
+      
+      const sql = `
+        INSERT INTO cards
+        (ls_abon, phone_number, call_from, sip, spec_full_name, full_name, address, account_id, n_result_id, mac_address, ip_address, mac_onu, ip_olt, reason_id, solution_id, comment, senior_specs)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      
+      db.run(sql, [
+        ls_abon,
+        JSON.stringify(phone_number),
+        call_from,
+        sip,
+        spec_full_name,
+        full_name,
+        address,
+        account_id || '',
+        n_result_id || '',
+        mac_address || '',
+        ip_address || '',
+        mac_onu || '',
+        ip_olt || '',
+        reason_id,
+        solution_id,
+        comment || '',
+        JSON.stringify(seniorSpecNames),
+      ], function (err) {
+        if (err) return res.status(500).json({
+          error: ERROR_MESSAGES[err.message] || err.message
+        });
+        res.json({
+          id: this.lastID,
+          assigned_senior_specs: seniorSpecNames
+        });
       });
     });
+    
   } catch (e) {
-    res.send(e);
+    res.status(500).send(e.message);
   }
 });
 

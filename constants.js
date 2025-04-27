@@ -18,6 +18,7 @@ export const initialGetCardsSql = `
    C.phone_number,
    call_from,
    C.address,
+   C.senior_specs,
    C.mac_address,
    C.ip_address,
    C.mac_onu,

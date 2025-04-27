@@ -1,6 +1,6 @@
 import sqlite3 from "sqlite3";
 
-const dbPath = './db/db.sqlite';
+const dbPath = './db/db1.sqlite';
 
 const verbose = sqlite3.verbose();
 const db = new verbose.Database(dbPath, (err) => {
@@ -8,6 +8,16 @@ const db = new verbose.Database(dbPath, (err) => {
 });
 
 db.exec('PRAGMA foreign_keys = ON;');
+
+db.run(`
+  ALTER TABLE users
+  ADD COLUMN is_senior_spec BOOLEAN DEFAULT 0
+`);
+
+db.run(`
+  ALTER TABLE cards
+  ADD COLUMN senior_specs TEXT
+`);
 
 db.run(`
   CREATE TABLE IF NOT EXISTS reasons (
