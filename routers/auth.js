@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import db from "../db.js";
 import * as dotenv from "dotenv";
+import auth from "../middleware/auth.js";
 
 dotenv.config();
 
@@ -93,7 +94,7 @@ authRouter.post("/sign-in", (req, res) => {
   });
 });
 
-authRouter.post("/reset_password", async (req, res) => {
+authRouter.post("/reset_password", auth, async (req, res) => {
   const {
     id,
     new_password
