@@ -396,18 +396,20 @@ cardsRouter.get('/inactives', async (req, res) => {
           balance,
         };
       });
-      const inactives = abonsWithBalance.filter(abon => abon?.balance < 0).map(abon => ({
-        ...abon,
-        phone_number: JSON.parse(abon.phone_number),
-        reason: abon.reason_id ? {
-          id: abon.reason_id,
-          title: abon.reason_title
-        } : null,
-        solution: abon.solution_id ? {
-          id: abon.solution_id,
-          title: abon.solution_title
-        } : null,
-      }));
+      const inactives = abonsWithBalance.filter(abon => abon?.balance < 0).map(abon => (
+        {
+          ...abon,
+          phone_number: JSON.parse(abon.phone_number),
+          reason: abon.reason_id ? {
+            id: abon.reason_id,
+            title: abon.reason_title
+          } : null,
+          solution: abon.solution_id ? {
+            id: abon.solution_id,
+            title: abon.solution_title
+          } : null,
+        }
+      ));
       res.json(inactives);
     });
   } catch (e) {
@@ -445,7 +447,7 @@ cardsRouter.post('/create_card', (req, res) => {
     
     // Find all checked-in senior specialists
     const findSeniorSpecsSql = `
-      SELECT u.id
+      SELECT u.*
       FROM users u
       LEFT JOIN checkins c ON u.id = c.user_id AND c.check_out_time IS NULL
       WHERE u.is_senior_spec = 1 AND c.id IS NOT NULL
@@ -454,7 +456,9 @@ cardsRouter.post('/create_card', (req, res) => {
     db.all(findSeniorSpecsSql, [], (err, seniorSpecs) => {
       if (err) return res.status(500).json({ error: err.message });
       
-      const seniorSpecNames = seniorSpecs.map(user => user.full_name);
+      const seniorSpecNames = (
+        seniorSpecs || []
+      ).map(user => `${user.full_name} (${user.sip})`);
       
       const sql = `
         INSERT INTO cards
@@ -479,7 +483,7 @@ cardsRouter.post('/create_card', (req, res) => {
         reason_id,
         solution_id,
         comment || '',
-        JSON.stringify(seniorSpecNames),
+        JSON.stringify(seniorSpecNames || []),
       ], function (err) {
         if (err) return res.status(500).json({
           error: ERROR_MESSAGES[err.message] || err.message
