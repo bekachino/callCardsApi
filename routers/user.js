@@ -33,6 +33,34 @@ usersRouter.get('/', (req, res) => {
   }
 });
 
+usersRouter.get('/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT
+        u.*,
+        CASE WHEN uc.id IS NOT NULL THEN 1 ELSE 0 END as checked_in
+      FROM users u
+      LEFT JOIN checkins uc ON u.id = uc.user_id AND uc.check_out_time IS NULL
+      WHERE u.id = ?
+    `;
+    db.all(sql, [id], (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      
+      const users = rows.map(row => (
+        {
+          ...row,
+          checked_in: !!row.checked_in,
+        }
+      ));
+      
+      res.json(users);
+    });
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
+});
+
 usersRouter.delete('/:id', (req, res) => {
   try {
     const { id } = req.params;
