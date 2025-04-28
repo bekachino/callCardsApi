@@ -101,6 +101,7 @@ cardsRouter.get('/', (req, res) => {
         {
           ...row,
           phone_number: JSON.parse(row.phone_number),
+          senior_specs: JSON.parse(row.senior_specs) || [],
           reason: row.reason_id ? {
             id: row.reason_id,
             title: row.reason_title

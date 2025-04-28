@@ -37,12 +37,12 @@ authRouter.post("/sign-up", async (req, res) => {
   
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = 'INSERT INTO users (username, full_name, role, password, sip, phone_number) VALUES (?, ?, ?, ?, ?, ?)';
+    const sql = 'INSERT INTO users (username, full_name, role, password, sip, phone_number, is_senior_spec) VALUES (?, ?, ?, ?, ?, ?, ?)';
     
     db.run(sql, [
       username,
       full_name,
-      role,
+      is_senior_spec ? 'user' : role,
       hashedPassword,
       sip,
       phone_number,
