@@ -93,4 +93,40 @@ authRouter.post("/sign-in", (req, res) => {
   });
 });
 
+authRouter.post("/reset_password", async (req, res) => {
+  const {
+    id,
+    new_password
+  } = req.body;
+  
+  if (!id || !new_password) {
+    return res.status(400).json({
+      message: "ID и новый пароль обязательны"
+    });
+  }
+  
+  try {
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+    
+    const sql = `UPDATE users SET password = ? WHERE id = ?`;
+    
+    db.run(sql, [
+      hashedPassword,
+      id
+    ], function (err) {
+      if (err) {
+        return res.status(500).json({ message: "Ошибка сервера" });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ message: "Пользователь не найден" });
+      }
+      
+      res.status(200).json({ message: "Пароль успешно сброшен" });
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка сервера" });
+  }
+});
+
 export default authRouter;

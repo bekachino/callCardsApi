@@ -9,16 +9,6 @@ const db = new verbose.Database(dbPath, (err) => {
 
 db.exec('PRAGMA foreign_keys = ON;');
 
-//db.run(`
-//  ALTER TABLE users
-//  ADD COLUMN is_senior_spec BOOLEAN DEFAULT 0
-//`);
-//
-//db.run(`
-//  ALTER TABLE cards
-//  ADD COLUMN senior_specs TEXT
-//`);
-
 db.run(`
   CREATE TABLE IF NOT EXISTS reasons (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
