@@ -3,13 +3,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import db from "../db.js";
 import * as dotenv from "dotenv";
+import auth from "../middleware/auth.js";
 
 dotenv.config();
 
 const authRouter = express.Router();
 const SECRET_KEY = process.env.SECRET_KEY;
 
-authRouter.post("/sign-up", async (req, res) => {
+authRouter.post("/sign-up", auth, async (req, res) => {
   const {
     username,
     full_name,
