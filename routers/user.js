@@ -1,6 +1,7 @@
 import db from "../db.js";
 import express from "express";
 import dayjs from "dayjs";
+import bcrypt from "bcryptjs";
 
 const usersRouter = express();
 
@@ -51,6 +52,7 @@ usersRouter.get('/:id', (req, res) => {
         {
           ...row,
           checked_in: !!row.checked_in,
+          role: !!row.is_senior_spec ? 'senior_spec' : row.role,
         }
       ));
       
@@ -58,6 +60,74 @@ usersRouter.get('/:id', (req, res) => {
     });
   } catch (e) {
     res.status(500).send(e.message);
+  }
+});
+
+usersRouter.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    username,
+    full_name,
+    role,
+    password,
+    sip,
+    phone_number
+  } = req.body;
+  
+  if (!username || !full_name || !role || !sip || !phone_number) {
+    return res.status(400).json({ message: "Все поля, за исключением пароля, обязательны" });
+  }
+  
+  const is_senior_spec = role === 'senior_spec';
+  
+  try {
+    let sql, params;
+    
+    if (password && password.trim() !== "") {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      sql = `
+        UPDATE users
+        SET username = ?, full_name = ?, role = ?, password = ?, sip = ?, phone_number = ?, is_senior_spec = ?
+        WHERE id = ?
+      `;
+      params = [
+        username,
+        full_name,
+        is_senior_spec ? 'user' : role,
+        hashedPassword,
+        sip,
+        phone_number,
+        is_senior_spec ? 1 : 0,
+        id
+      ];
+    } else {
+      sql = `
+        UPDATE users
+        SET username = ?, full_name = ?, role = ?, sip = ?, phone_number = ?, is_senior_spec = ?
+        WHERE id = ?
+      `;
+      params = [
+        username,
+        full_name,
+        is_senior_spec ? 'user' : role,
+        sip,
+        phone_number,
+        is_senior_spec ? 1 : 0,
+        id
+      ];
+    }
+    
+    db.run(sql, params, function (err) {
+      if (err) {
+        return res.status(500).json({ message: err.message });
+      }
+      if (this.changes === 0) {
+        return res.status(404).json({ message: "Пользователь не найден" });
+      }
+      res.json({ message: "Пользователь обновлен" });
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Ошибка сервера" });
   }
 });
 

@@ -67,7 +67,14 @@ authRouter.post("/sign-in", (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ message: "Имя пользователя и пароль обязательны" });
   }
-  const sql = 'SELECT * FROM users WHERE username = ?';
+  const sql = `
+    SELECT
+      u.*,
+      CASE WHEN uc.id IS NOT NULL THEN 1 ELSE 0 END as checked_in
+    FROM users u
+    LEFT JOIN checkins uc ON u.id = uc.user_id AND uc.check_out_time IS NULL
+    WHERE u.username = ?
+  `;
   
   db.get(sql, [username], async (err, user) => {
     if (err) return res.status(500).json({ message: "Ошибка базы данных" });
@@ -87,47 +94,13 @@ authRouter.post("/sign-in", (req, res) => {
       message: "Вы успешно авторизованы",
       data: {
         ...user,
+        role: !!user.is_senior_spec ? 'senior_spec' : user.role,
         password: null,
+        checked_in: !!user.checked_in,
         token,
       }
     });
   });
-});
-
-authRouter.post("/reset_password", auth, async (req, res) => {
-  const {
-    id,
-    new_password
-  } = req.body;
-  
-  if (!id || !new_password) {
-    return res.status(400).json({
-      message: "ID и новый пароль обязательны"
-    });
-  }
-  
-  try {
-    const hashedPassword = await bcrypt.hash(new_password, 10);
-    
-    const sql = `UPDATE users SET password = ? WHERE id = ?`;
-    
-    db.run(sql, [
-      hashedPassword,
-      id
-    ], function (err) {
-      if (err) {
-        return res.status(500).json({ message: "Ошибка сервера" });
-      }
-      
-      if (this.changes === 0) {
-        return res.status(404).json({ message: "Пользователь не найден" });
-      }
-      
-      res.status(200).json({ message: "Пароль успешно сброшен" });
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Ошибка сервера" });
-  }
 });
 
 export default authRouter;

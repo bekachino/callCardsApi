@@ -5,7 +5,10 @@ import usersRouter from "./routers/user.js";
 import authRouter from "./routers/auth.js";
 import cardsRouter from "./routers/cards.js";
 import hydraSeekerRouter from "./routers/hydraSeeker.js";
+import dotenv from 'dotenv';
 import auth from "./middleware/auth.js";
+
+dotenv.config();
 
 const app = express();
 const PORT = 8010;
