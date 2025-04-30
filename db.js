@@ -1,6 +1,6 @@
 import sqlite3 from "sqlite3";
 
-const dbPath = './db/db1.sqlite';
+const dbPath = './db/db.sqlite';
 
 const verbose = sqlite3.verbose();
 const db = new verbose.Database(dbPath, (err) => {
