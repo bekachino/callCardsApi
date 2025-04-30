@@ -10,6 +10,16 @@ const db = new verbose.Database(dbPath, (err) => {
 db.exec('PRAGMA foreign_keys = ON;');
 
 db.run(`
+  ALTER TABLE users
+  ADD COLUMN is_senior_spec BOOLEAN DEFAULT 0
+`);
+
+db.run(`
+  ALTER TABLE cards
+  ADD COLUMN senior_specs TEXT
+`);
+
+db.run(`
   CREATE TABLE IF NOT EXISTS reasons (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT UNIQUE NOT NULL
@@ -33,7 +43,8 @@ db.run(`
     role TEXT NOT NULL CHECK (role IN ('admin', 'user')),
     password TEXT NOT NULL,
     sip TEXT NOT NULL,
-    phone_number TEXT NOT NULL
+    phone_number TEXT NOT NULL,
+    is_senior_spec BOOLEAN DEFAULT 0
   );
 `);
 
@@ -57,8 +68,9 @@ db.run(`
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     reason_id INTEGER NOT NULL,
     solution_id INTEGER,
-    FOREIGN KEY (reason_id) REFERENCES reasons(id),
-    FOREIGN KEY (solution_id) REFERENCES solutions(id)
+    senior_specs TEXT,
+    FOREIGN KEY (reason_id) REFERENCES reasons(id) ON DELETE SET NULL,
+    FOREIGN KEY (solution_id) REFERENCES solutions(id) ON DELETE SET NULL
   );
 `);
 
