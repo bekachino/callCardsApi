@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import db from "../db.js";
 import * as dotenv from "dotenv";
-import auth from "../middleware/auth.js";
 
 dotenv.config();
 
