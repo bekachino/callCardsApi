@@ -20,6 +20,8 @@ authRouter.post("/sign-up", auth, async (req, res) => {
     phone_number
   } = req.body;
   
+  if (!['admin'].includes(req?.user) || !req?.is_senior_spec) return res.status(401);
+  
   if (!username || !full_name || !role || !password || !sip || !phone_number) {
     return res.status(400).json({
       message: "Имя пользователя, ФИО, СИП, номер телефона, роль и пароль обязательны"

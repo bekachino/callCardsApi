@@ -400,6 +400,7 @@ cardsRouter.get('/inactives', async (req, res) => {
         {
           ...abon,
           phone_number: JSON.parse(abon.phone_number),
+          senior_specs: JSON.parse(abon.senior_specs),
           reason: abon.reason_id ? {
             id: abon.reason_id,
             title: abon.reason_title
