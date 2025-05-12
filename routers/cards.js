@@ -9,7 +9,7 @@ const formatRepeatedCalls = rawData => {
   const grouped = {};
   
   rawData.forEach(item => {
-    const key = `${item.ls_abon}|${item.reason}|${item.solution || 'null'}`;
+    const key = `${item.ls_abon}|${item.reason?.title}|${item.solution?.title || 'null'}`;
     
     if (!grouped[key]) {
       grouped[key] = {
