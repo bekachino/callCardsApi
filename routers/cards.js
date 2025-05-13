@@ -271,27 +271,49 @@ cardsRouter.get('/repeated_calls', (req, res) => {
       page = '1',
       page_size = '100',
       start_date,
-      end_date
+      end_date,
+      reason,
+      solution
     } = req.query;
     const isUser = req.user?.role === 'user';
-    let sql;
-    let sqlParams = [];
+    const reasonIds = typeof reason === 'string' ? reason.split(',') : reason;
+    const solutionIds = typeof solution === 'string' ? solution.split(',') : solution;
+    
     const pageNum = parseInt(page) || 1;
     const pageSize = parseInt(page_size) || 100;
     
-    if (!start_date && !end_date) {
-      sql = initialGetCardsSql;
-    } else {
-      sql = `
-        ${initialGetCardsSql}
-        WHERE ${!!start_date ? 'C.created_at >= ?' : ''} ${!!start_date && !!end_date ? 'AND' : ''} ${!!end_date ? 'C.created_at <= ?' : ''}
-      `;
-      if (!!start_date) sqlParams.push(start_date);
-      if (!!end_date) sqlParams.push(end_date);
+    let sql = `${initialGetCardsSql}`;
+    let whereClauses = [];
+    let sqlParams = [];
+    
+    if (start_date) {
+      whereClauses.push('C.created_at >= ?');
+      sqlParams.push(start_date);
     }
-    if (isUser && !!req.user.sip) {
-      sql += isUser ? `\nWHERE C.sip = ?` : ''
+    if (end_date) {
+      whereClauses.push('C.created_at <= ?');
+      sqlParams.push(end_date);
+    }
+    
+    if (isUser && req.user?.sip) {
+      whereClauses.push('C.sip = ?');
       sqlParams.push(req.user.sip);
+    }
+    
+    if (Array.isArray(reasonIds) && reasonIds.length > 0) {
+      const placeholders = reasonIds.map(() => '?').join(', ');
+      whereClauses.push(`C.reason_id IN (${placeholders})`);
+      sqlParams.push(...reasonIds);
+    }
+    
+    if (Array.isArray(solutionIds) && solutionIds.length > 0) {
+      const placeholders = solutionIds.map(() => '?').join(', ');
+      whereClauses.push(`C.solution_id IN (${placeholders})`);
+      sqlParams.push(...solutionIds);
+    }
+    
+    if (whereClauses.length > 0) {
+      sql += '\nWHERE ' + whereClauses.join(' AND ');
     }
     
     db.all(sql, sqlParams, (err, rows) => {
