@@ -41,8 +41,7 @@ export default async function getBalances(accountIds) {
     
     return result.rows;
   } catch (err) {
-    console.error(err);
-    throw err;
+    console.log(err);
   } finally {
     if (connection) {
       try {
