@@ -20,44 +20,44 @@ authRouter.post("/sign-up", auth, async (req, res) => {
     phone_number
   } = req.body;
   
-  if (!['admin'].includes(req?.user) || !req?.is_senior_spec) return res.status(401);
-  
-  if (!username || !full_name || !role || !password || !sip || !phone_number) {
-    return res.status(400).json({
-      message: "Имя пользователя, ФИО, СИП, номер телефона, роль и пароль обязательны"
-    });
-  }
-  
-  if (![
-    "admin",
-    "user",
-    "senior_spec"
-  ].includes(role)) {
-    return res.status(400).json({ message: "Неверная роль" });
-  }
-  
-  const is_senior_spec = role === 'senior_spec';
-  
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const sql = 'INSERT INTO users (username, full_name, role, password, sip, phone_number, is_senior_spec) VALUES (?, ?, ?, ?, ?, ?, ?)';
+  if (['admin'].includes(req?.user?.role) || req?.user?.is_senior_spec) {
+    if (!username || !full_name || !role || !password || !sip || !phone_number) {
+      return res.status(400).json({
+        message: "Имя пользователя, ФИО, СИП, номер телефона, роль и пароль обязательны"
+      });
+    }
     
-    db.run(sql, [
-      username,
-      full_name,
-      is_senior_spec ? 'user' : role,
-      hashedPassword,
-      sip,
-      phone_number,
-      is_senior_spec ? 1 : 0
-    ], function (err) {
-      if (err) {
-        return res.status(400).json({ message: "Имя пользователя занято" });
-      }
-      res.status(200).json({ message: "Вы успешно зарегистрированы" });
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Ошибка сервера" });
+    if (![
+      "admin",
+      "user",
+      "senior_spec"
+    ].includes(role)) {
+      return res.status(400).json({ message: "Неверная роль" });
+    }
+    
+    const is_senior_spec = role === 'senior_spec';
+    
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const sql = 'INSERT INTO users (username, full_name, role, password, sip, phone_number, is_senior_spec) VALUES (?, ?, ?, ?, ?, ?, ?)';
+      
+      db.run(sql, [
+        username,
+        full_name,
+        is_senior_spec ? 'user' : role,
+        hashedPassword,
+        sip,
+        phone_number,
+        is_senior_spec ? 1 : 0
+      ], function (err) {
+        if (err) {
+          return res.status(400).json({ message: "Имя пользователя занято" });
+        }
+        res.status(200).json({ message: "Вы успешно зарегистрированы" });
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Ошибка сервера" });
+    }
   }
 });
 
