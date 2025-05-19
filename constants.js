@@ -1,5 +1,8 @@
 import axios from "axios";
 
+export const BITRIX_ADMIN_ID = 87;
+export const BITRIX_INTEGRATOR_ID = 35319;
+
 export const ERROR_MESSAGES = {
   "SQLITE_CONSTRAINT: UNIQUE constraint failed: reasons.title": "Запись с таким значением уже сущесвует",
   "SQLITE_CONSTRAINT: FOREIGN KEY constraint failed": "Отсутсвует родительское значение"

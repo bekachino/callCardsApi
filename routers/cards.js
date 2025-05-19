@@ -1,7 +1,8 @@
 import db from "../db.js";
 import express from "express";
 import { ERROR_MESSAGES, initialGetCardsSql } from "../constants.js";
-import getBalances from "../utils.js";
+import getBalances from "../utils/hydraConnection.js";
+import { createDeal } from "../utils/createDeal.js";
 
 const cardsRouter = express();
 
@@ -511,13 +512,34 @@ cardsRouter.post('/create_card', (req, res) => {
         if (err) return res.status(500).json({
           error: ERROR_MESSAGES[err.message] || err.message
         });
+        
+        if (solution_id === 9) {
+          db.get('select * from reasons where id = ?', [reason_id], (err, reason_result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            
+            db.get('select * from solutions where id = ?', [solution_id], async (err, solution_result) => {
+              if (err) return res.status(500).json({ error: err.message });
+              
+              await createDeal({
+                full_name,
+                spec_full_name,
+                address,
+                ls_abon,
+                phone_number,
+                comment,
+                reason: reason_result?.title || '',
+                solution: solution_result?.title || '',
+              });
+            });
+          });
+        }
+        
         res.json({
           id: this.lastID,
           assigned_senior_specs: seniorSpecNames
         });
       });
     });
-    
   } catch (e) {
     res.status(500).send(e.message);
   }
