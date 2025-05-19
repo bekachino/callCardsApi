@@ -513,13 +513,13 @@ cardsRouter.post('/create_card', (req, res) => {
           error: ERROR_MESSAGES[err.message] || err.message
         });
         
-        if (solution_id === 9) {
-          db.get('select * from reasons where id = ?', [reason_id], (err, reason_result) => {
+        db.get('select * from reasons where id = ?', [reason_id], (err, reason_result) => {
+          if (err) return res.status(500).json({ error: err.message });
+          
+          db.get('select * from solutions where id = ?', [solution_id], async (err, solution_result) => {
             if (err) return res.status(500).json({ error: err.message });
             
-            db.get('select * from solutions where id = ?', [solution_id], async (err, solution_result) => {
-              if (err) return res.status(500).json({ error: err.message });
-              
+            if (solution_result?.title.includes('перезвон')) {
               await createDeal({
                 full_name,
                 spec_full_name,
@@ -530,9 +530,9 @@ cardsRouter.post('/create_card', (req, res) => {
                 reason: reason_result?.title || '',
                 solution: solution_result?.title || '',
               });
-            });
+            }
           });
-        }
+        });
         
         res.json({
           id: this.lastID,
